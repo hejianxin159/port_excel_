@@ -21,6 +21,10 @@ async def save_device_data(device_data: dict):
                 data_info['z_cabinet_id'] = z_device_position_id.id
             data_info['sheet_name'] = key
     for i in value:
+        if 'is_exist' in i:
+            del i['is_exist']
+
+        print(i)
         db_session.add(Devices(**i))
     db_session.commit()
     # exit()
@@ -80,9 +84,10 @@ async def change_port_excel(worksheet: object, device_name: str):
 
 
 async def main():
+    # data =  save_device(['./zhenzhou/PODbak.xlsx', './zhenzhou/nine.xlsx', './zhenzhou/huiju.xlsx', './zhenzhou/admin.xlsx'])
     # data =  save_device(['./zhenzhou/PODbak.xlsx'])
-    data =  save_device(['./zhenzhou/nine.xlsx'])
-    # data =  save_device(['./shanxi/admin.xlsx'])
+    # data =  save_device(['./zhenzhou/nine.xlsx'])
+    data =  save_device(['./zhenzhou/admin.xlsx'])
     for data_info in data:
         # 数据入库
         future = asyncio.ensure_future(save_device_data(data_info))

@@ -18,15 +18,15 @@ def change_device_data(device_name: str, device_data: list) -> list:
     # assert len(re_find_name_num) == 1
     # device_name_num = int(re_find_name_num[0])
     device_name_split_list = device_name.split('-')
-    if len(device_name_split_list) > 1 and len(device_name_split_list) == 2:
+    if len(device_name_split_list) > 1 and len(device_name_split_list) == 2 and '网络设备管' not in device_name:
         device_name_num = int(device_name_split_list[-1])
-    elif 'IPMI接入交换机' in device_name:
-        device_name_num = int(re.findall(r'.*?(\d+)', device_name)[0])
-    elif '九期' in device_name:
+    elif 'IPMI接入交换机' in device_name or '九期' in device_name or '网络设备管' in device_name:
         device_name_num = int(re.findall(r'.*?(\d+)', device_name)[0])
     else:
         print(device_name)
     for port_info in device_data:
+        if port_info["is_exist"] == "原有":
+            continue
         print(port_info)
         cabinet_num = port_info['cabinet_num']
         a_port = port_info["a_port"]
@@ -45,11 +45,17 @@ def change_device_data(device_name: str, device_data: list) -> list:
             continue
         else:
             del port_info["is_reserve"]
-            a_port_list = a_port.split('-')
-            if len(a_port_list) > 1:
-                a_port_name_prefix = a_port_list[0].split('/')[0]
-                a_port_first = int(a_port_list[0].split('/')[-1])
-                a_port_last = int(a_port_list[1].split('/')[-1])
+            a_port_list = a_port.split('-')              #   1-5   1/1/1-1/1/5
+            if len(a_port_list) == 2:
+                range_left_port_name = a_port_list[0].split('/')   # [1, 5], [1/1/1, 1/1/5]
+                range_right_port_name = a_port_list[1].split('/')
+                if len(range_left_port_name) > 1 and len(range_right_port_name) > 1:
+                    #[1/1/1, 1/1/5]
+                    a_port_first = int(range_left_port_name[-1])
+                    a_port_last = int(range_right_port_name[-1])
+                else:
+                    a_port_first = int(range_left_port_name[0])
+                    a_port_last = int(range_right_port_name[0])
                 a_port_num = a_port_last - a_port_first + 1
                 z_device_list = z_device.split('~')
                 if len(z_device_list) > 1:
@@ -58,7 +64,6 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     z_device_last = int(z_device_list[1])
                     z_device_port_num = z_device_last - z_device_first + 1
                     z_device_num_list = [str(i) for i in list(range(z_device_first, z_device_last + 1))]
-                    print(device_name)
                     if device_name_num % 2 == 0:
                         z_port_first = '3#业务口'
                         z_port_last = '4#业务口'
@@ -75,7 +80,7 @@ def change_device_data(device_name: str, device_data: list) -> list:
                             else:
                                 z_port_name = z_port_last
                             data.append({"a_device": device_name,
-                                         "a_port": a_port_name_prefix + '/' + str(num),
+                                         "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
                                          "z_port": z_port_name,
                                          "cabinet_num": cabinet_num})
@@ -84,7 +89,7 @@ def change_device_data(device_name: str, device_data: list) -> list:
 
                         for index, num in enumerate(range(a_port_first, a_port_last + 1)):
                             data.append({"a_device": device_name,
-                                         "a_port": a_port_name_prefix + '/' + str(num),
+                                         "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
                                          "cabinet_num": cabinet_num
                                          })
@@ -92,7 +97,7 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     else:                                           #前面和后面相等的情况
                         for index, num in enumerate(range(a_port_first, a_port_last + 1)):
                             data.append({"a_device": device_name,
-                                         "a_port": a_port_name_prefix + '/' + str(num),
+                                         "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
                                          "z_port": z_port_first,
                                          "cabinet_num": cabinet_num})
@@ -101,7 +106,7 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     for index, num in enumerate(range(a_port_first, a_port_last + 1)):
 
                         data.append({"a_device": device_name,
-                                     "a_port": a_port_name_prefix + '/' + str(num),
+                                     "a_port":'/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                      "z_device": z_device_list[-1],
                                      "cabinet_num": cabinet_num})
             else:
@@ -137,7 +142,7 @@ def save_device(file_path_list: list) -> list:
             "a_port": "D",            #板卡编号
             "is_reserve": "E",       #判断是否预留
             "z_device": "F",           #z端设备
-
+            "is_exist": "I"
         }
         # for sheet_index in range(sheet_num):
         for sheet_index in range(sheet_num):  #遍历sheet
