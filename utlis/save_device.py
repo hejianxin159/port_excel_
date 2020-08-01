@@ -21,10 +21,11 @@ def change_device_data(device_name: str, device_data: list) -> list:
     if len(device_name_split_list) > 1 and len(device_name_split_list) == 2:
         device_name_num = int(device_name_split_list[-1])
     elif 'IPMI接入交换机' in device_name:
-        device_name_nnm = int(re.findall(r'.*?(\d+)', device_name)[0])
+        device_name_num = int(re.findall(r'.*?(\d+)', device_name)[0])
     elif '九期' in device_name:
-        device_name_nnm = int(re.findall(r'.*?(\d+)', device_name)[0])
-
+        device_name_num = int(re.findall(r'.*?(\d+)', device_name)[0])
+    else:
+        print(device_name)
     for port_info in device_data:
         print(port_info)
         cabinet_num = port_info['cabinet_num']
@@ -57,6 +58,7 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     z_device_last = int(z_device_list[1])
                     z_device_port_num = z_device_last - z_device_first + 1
                     z_device_num_list = [str(i) for i in list(range(z_device_first, z_device_last + 1))]
+                    print(device_name)
                     if device_name_num % 2 == 0:
                         z_port_first = '3#业务口'
                         z_port_last = '4#业务口'

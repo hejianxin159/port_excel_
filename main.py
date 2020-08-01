@@ -80,7 +80,8 @@ async def change_port_excel(worksheet: object, device_name: str):
 
 
 async def main():
-    data =  save_device(['./zhenzhou/PODbak.xlsx'])
+    # data =  save_device(['./zhenzhou/PODbak.xlsx'])
+    data =  save_device(['./zhenzhou/nine.xlsx'])
     # data =  save_device(['./shanxi/admin.xlsx'])
     for data_info in data:
         # 数据入库
