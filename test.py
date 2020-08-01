@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 # author: hejianxin
 # date: 2020/7/22 15:27
-import os
-import xlrd
-from openpyxl.utils import column_index_from_string
-from models import UserInfo
 #
 # class ExcelResolver:
 #     """docstring for InputResolver."""
