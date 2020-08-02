@@ -20,21 +20,22 @@ def change_device_data(device_name: str, device_data: list) -> list:
     device_name_split_list = device_name.split('-')
     if len(device_name_split_list) > 1 and len(device_name_split_list) == 2 and '网络设备管' not in device_name:
         device_name_num = int(device_name_split_list[-1])
-    elif 'IPMI接入交换机' in device_name or '九期' in device_name or '网络设备管' in device_name:
+    elif 'IPMI接入交换机' in device_name or '九期' in device_name or '网络设备管' in device_name or '管理域管理汇聚交换机' in device_name:
         device_name_num = int(re.findall(r'.*?(\d+)', device_name)[0])
     else:
         print(device_name)
     for port_info in device_data:
         if port_info["is_exist"] == "原有":
             continue
-        print(port_info)
         cabinet_num = port_info['cabinet_num']
         a_port = port_info["a_port"]
         if isinstance(a_port, float):
             a_port = str(int(a_port))
+        print(port_info)
 
         is_reserve = port_info["is_reserve"]
         z_device = port_info["z_device"].strip()
+        port_type = port_info['port_type']
         port_info.update({'a_device': device_name})
         if is_reserve == "预留" or z_device == "预留":
             del port_info["is_reserve"]
@@ -42,7 +43,9 @@ def change_device_data(device_name: str, device_data: list) -> list:
         elif is_reserve == '' and z_device == '' and a_port == '':
             continue
         elif is_reserve == "空" or z_device == "空":
-            continue
+            del port_info["is_reserve"]
+            port_info['z_device'] = "预留"
+            data.append(port_info)
         else:
             del port_info["is_reserve"]
             a_port_list = a_port.split('-')              #   1-5   1/1/1-1/1/5
@@ -65,11 +68,26 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     z_device_port_num = z_device_last - z_device_first + 1
                     z_device_num_list = [str(i) for i in list(range(z_device_first, z_device_last + 1))]
                     if device_name_num % 2 == 0:
-                        z_port_first = '3#业务口'
-                        z_port_last = '4#业务口'
+                        if '管理' in device_name:
+                            z_port_first = '3#管理口'
+                            z_port_last = '4#管理口'
+                        elif 'IPMI' in device_name:
+                            z_port_first = 'IPMI口'
+                            z_port_last = 'IPMI口'
+                        else:
+                            z_port_first = '3#业务口'
+                            z_port_last = '4#业务口'
                     else:
-                        z_port_first = '1#业务口'
-                        z_port_last = '2#业务口'
+                        if '管理' in device_name:
+                            z_port_first = '1#管理口'
+                            z_port_last = '2#管理口'
+                        elif 'IPMI' in device_name:
+                            z_port_first = 'IPMI口'
+                            z_port_last = 'IPMI口'
+                        else:
+                            z_port_first = '1#业务口'
+                            z_port_last = '2#业务口'
+
                     if z_device_port_num * 2 == a_port_num:         #前面是后面2倍的情况
                         z_device_num_list = [i for i in z_device_num_list for j in range(2)]
                         # a_device_num_list = [str(i+1) for i in list(range(a_port_num))]
@@ -83,7 +101,8 @@ def change_device_data(device_name: str, device_data: list) -> list:
                                          "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
                                          "z_port": z_port_name,
-                                         "cabinet_num": cabinet_num})
+                                         "cabinet_num": cabinet_num,
+                                         "port_type": port_type})
                     elif z_device_port_num * 3 == a_port_num:
                         z_device_num_list = [i for i in z_device_num_list for j in range(3)]
 
@@ -91,7 +110,8 @@ def change_device_data(device_name: str, device_data: list) -> list:
                             data.append({"a_device": device_name,
                                          "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
-                                         "cabinet_num": cabinet_num
+                                         "cabinet_num": cabinet_num,
+                                         "port_type": port_type
                                          })
 
                     else:                                           #前面和后面相等的情况
@@ -100,7 +120,8 @@ def change_device_data(device_name: str, device_data: list) -> list:
                                          "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
                                          "z_port": z_port_first,
-                                         "cabinet_num": cabinet_num})
+                                         "cabinet_num": cabinet_num,
+                                         "port_type": port_type})
 
                 else:                                                #前面是两个，后面是一个的情况
                     for index, num in enumerate(range(a_port_first, a_port_last + 1)):
@@ -108,7 +129,8 @@ def change_device_data(device_name: str, device_data: list) -> list:
                         data.append({"a_device": device_name,
                                      "a_port":'/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                      "z_device": z_device_list[-1],
-                                     "cabinet_num": cabinet_num})
+                                     "cabinet_num": cabinet_num,
+                                     "port_type": port_type})
             else:
                 if "&" in z_device: #{'a_device': 'POD1-业务核心交换机-锐捷N18010-1', 'a_port': '', 'z_device': '网络设备管理接入交换机-华为S5335-5&6'}
                     z_device_split_list = z_device.split('&')
@@ -117,11 +139,15 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     port_info = copy.deepcopy(port_info)
                     port_info['cabinet_num'] = cabinet_num
                     port_info['z_device'] = z_device_split_first
+
                     data.append(port_info)
                     port_info = copy.deepcopy(port_info)
                     port_info['z_device'] = z_device_prefix + '-' + z_device_split_list[-1]
                     data.append(port_info)
                 else:
+
+                    if len(a_port) == 0 and '网络设备管理接入交换机' in port_info['z_device']:
+                        port_info['a_port'] = '管理口'
                     data.append(port_info)
 
     return data
@@ -142,7 +168,8 @@ def save_device(file_path_list: list) -> list:
             "a_port": "D",            #板卡编号
             "is_reserve": "E",       #判断是否预留
             "z_device": "F",           #z端设备
-            "is_exist": "I"
+            "is_exist": "I",
+            "port_type": "E"
         }
         # for sheet_index in range(sheet_num):
         for sheet_index in range(sheet_num):  #遍历sheet

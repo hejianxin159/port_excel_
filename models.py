@@ -31,6 +31,8 @@ class Devices(Base):
     is_use = Column(Boolean, default=False)
     cabinet_num = Column(String(2))
 
+
+    port_type = Column(String(60))
     a_device_position_id = relationship('DevicePosition', single_parent=True, foreign_keys=[a_cabinet_id])
     z_device_position_id = relationship('DevicePosition', single_parent=True, foreign_keys=[z_cabinet_id])
 
