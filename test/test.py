@@ -196,7 +196,12 @@
 #
 # -*- coding: utf-8 -*-
 
-import re
-a = 'POD2 10G存储接入交换机-10'
-b = re.findall('[\u4e00-\u9fa5]', a)
-print(len(b))
+import xlwt
+
+workbook = xlwt.Workbook(encoding='utf-8')
+worksheet = workbook.add_sheet('123')  # 生成sheet
+worksheet.col(0).width = 256*20
+
+worksheet.row(2).height_mismatch = 1
+worksheet.row(2).height = 1000
+workbook.save('test.xlsx')

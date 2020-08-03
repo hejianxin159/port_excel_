@@ -54,7 +54,6 @@ async def save_device_data(device_data: dict):
     for i in value:
         if 'is_exist' in i:
             del i['is_exist']
-
         # print(i)
         db_session.add(Devices(**i))
     db_session.commit()
@@ -108,6 +107,7 @@ async def change_port_excel(worksheet: object, device_name: str):
 
         # print('12312', a_port_s, z_port_s)
         index += 1
+        worksheet.col(index).width = 256 * 25   # xlwt中是行和列都是从0开始计算的
         worksheet.write(index, 0, a_room)
         worksheet.write(index, 1, a_cabinet_name)
         worksheet.write(index, 2, a_u)
@@ -127,9 +127,9 @@ async def change_port_excel(worksheet: object, device_name: str):
 
 async def main():
     data =  save_device(['./zhenzhou/PODbak.xlsx', './zhenzhou/nine.xlsx', './zhenzhou/huiju.xlsx', './zhenzhou/admin.xlsx'])
-    # # data =  save_device(['./zhenzhou/PODbak.xlsx'])
+    # data =  save_device(['./zhenzhou/test.xlsx'])
     # # data =  save_device(['./zhenzhou/nine.xlsx'])
-    # # data =  save_device(['./zhenzhou/admin.xlsx'])
+    # data =  save_device(['./zhenzhou/admin.xlsx'])
     for data_info in data:
         # 数据入库
         future = asyncio.ensure_future(save_device_data(data_info))
@@ -138,45 +138,64 @@ async def main():
     #生成报表
     file_name_list = db_session.query(Devices.sheet_name).group_by(Devices.sheet_name)
     for file_name in file_name_list:
-        if file_name[0] == 'admin.xlsx' or file_name[0] == 'huiju.xlsx':
+        if file_name[0] == 'admin.xlsx' or file_name[0] == 'huiju.xlsx' or file_name[0] == 'nine.xlsx':
             continue
         device_name_list = db_session.query(Devices.a_device).filter_by(sheet_name = file_name[0]).group_by(Devices.a_device)
         workbook = xlwt.Workbook(encoding='utf-8')
-        # device_name_list = [i[0] for i in device_name_list]
-        # device_name_dict = {}       #POD1-25G接入交换机-锐捷S6510 [1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 2, 3, 4, 5, 6, 7, 8, 9]
-        # for device_name in device_name_list:
-        #     device_name_split_list = device_name.split('-')
-        #     device_name_prefix = '-'.join(device_name_split_list[:-1])
-        #     exist_device_name = device_name_dict.get(device_name_prefix)
-        #     if exist_device_name:
-        #         exist_device_name.append(int(device_name_split_list[-1]))
-        #         device_name_dict[device_name_prefix] = exist_device_name
-        #     else:
-        #         device_name_dict[device_name_prefix] = [int(device_name_split_list[-1])]
-        #
-        #
-        # for device_name_prefix, device_num_list in device_name_dict.items():
-        #     device_num_list = sorted(device_num_list) #排序
+        device_name_list = [i[0] for i in device_name_list]
+        device_name_dict = {}       #POD1-25G接入交换机-锐捷S6510 [1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 2, 3, 4, 5, 6, 7, 8, 9]
+        for device_name in device_name_list:
+            device_name_split_list = device_name.split('-')
+            if len(device_name_split_list) == 1:
+                if '九期POD' in device_name:
+                    device_name_split_list = re.findall(r'(.*?\d.*?)(\d+)', device_name)[0]
+                else:
+                    device_name_split_list = re.findall(r'(.*?)(\d+)', device_name)[0]
+            device_name_prefix = '-'.join(device_name_split_list[:-1])
+            exist_device_name = device_name_dict.get(device_name_prefix)
+            if exist_device_name:
+                exist_device_name.append(int(device_name_split_list[-1]))
+                device_name_dict[device_name_prefix] = exist_device_name
+            else:
+                device_name_dict[device_name_prefix] = [int(device_name_split_list[-1])]
 
-        for select_device_name in device_name_list:
-            # select_device_name = device_name_prefix + '-' + str(device_num)
-            select_device_name = select_device_name[0]
-            worksheet = workbook.add_sheet(select_device_name)  #生成sheet
-            worksheet.write(0, 0, "A端设备所在机房")
-            worksheet.write(0, 1, "A端设备所在机柜")
-            worksheet.write(0, 2, "A端设备所在U位", )
-            worksheet.write(0, 3, "A端设备")
-            worksheet.write(0, 4, "A端物理端口")
-            worksheet.write(0, 5, "A端端口类型")
-            worksheet.write(0, 6, "Z端设备所在机房")
-            worksheet.write(0, 7, "Z端设备所在机柜", )
-            worksheet.write(0, 8, "Z端设备所在U位", )
-            worksheet.write(0, 9, "Z端设备", )
-            worksheet.write(0, 10, "Z端物理端口", )
-            print(select_device_name)
-            asyncio.ensure_future(change_port_excel(worksheet, select_device_name))
-            await asyncio.sleep(0)
-        workbook.save(file_name[0].split('.')[0] + 'report.xlsx')
+
+        for device_name_prefix, device_num_list in device_name_dict.items():
+            device_name_dict[device_name_prefix] = sorted(device_num_list) #排序
+            # print(a)
+
+        #
+        # for i, d in device_name_dict.items():
+        #     print(i,d)
+        # exit()
+
+
+        #
+        #
+        for device_name_prefix, device_num_dict_list in device_name_dict.items():
+            for device_num in device_num_dict_list:
+                if '九期管理DMZ接入交换机' in device_name_prefix or '管理域 IPMI接入交换机' in device_name_prefix or '九期' in device_name_prefix:
+                    select_device_name = device_name_prefix + str(device_num)
+                else:
+                    select_device_name = device_name_prefix + '-' + str(device_num)
+                print(device_name_prefix, device_num)
+                select_device_name = select_device_name
+                worksheet = workbook.add_sheet(select_device_name)  #生成sheet
+                worksheet.write(0, 0, "A端设备所在机房")
+                worksheet.write(0, 1, "A端设备所在机柜")
+                worksheet.write(0, 2, "A端设备所在U位", )
+                worksheet.write(0, 3, "A端设备")
+                worksheet.write(0, 4, "A端物理端口")
+                worksheet.write(0, 5, "A端端口类型")
+                worksheet.write(0, 6, "Z端设备所在机房")
+                worksheet.write(0, 7, "Z端设备所在机柜", )
+                worksheet.write(0, 8, "Z端设备所在U位", )
+                worksheet.write(0, 9, "Z端设备", )
+                worksheet.write(0, 10, "Z端物理端口", )
+                print(select_device_name)
+                asyncio.ensure_future(change_port_excel(worksheet, select_device_name))
+                await asyncio.sleep(0)
+            workbook.save(file_name[0].split('.')[0] + 'report.xlsx')
 
 
 if __name__ == '__main__':
@@ -192,4 +211,20 @@ if __name__ == '__main__':
     Devices.__table__.create(engine)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    # a = 0
+    # workbook = xlwt.Workbook(encoding='utf-8')
+    # worksheet = workbook.add_sheet('device')  # 生成sheet
+    # data = []
+    # for i in db_session.query(Devices.a_device).group_by(Devices.a_device):
+    #     i = i[0]
+    #     if i.startswith('POD3'):
+    #         a = 1
+    #     if a:
+    #         data.append(i)
+    #
+    # for index, j in enumerate(data):
+    #     worksheet.col(index).width = 250 * 20
+    #     worksheet.write(index,0, j)
+    # workbook.save('device.xlsx')
+
 

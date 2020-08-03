@@ -31,8 +31,8 @@ def change_device_data(device_name: str, device_data: list) -> list:
         a_port = port_info["a_port"]
         if isinstance(a_port, float):
             a_port = str(int(a_port))
-        print(port_info)
 
+        # print(port_info)
         is_reserve = port_info["is_reserve"]
         z_device = port_info["z_device"].strip()
         port_type = port_info['port_type']
@@ -52,11 +52,13 @@ def change_device_data(device_name: str, device_data: list) -> list:
             if len(a_port_list) == 2:
                 range_left_port_name = a_port_list[0].split('/')   # [1, 5], [1/1/1, 1/1/5]
                 range_right_port_name = a_port_list[1].split('/')
+
                 if len(range_left_port_name) > 1 and len(range_right_port_name) > 1:
                     #[1/1/1, 1/1/5]
                     a_port_first = int(range_left_port_name[-1])
                     a_port_last = int(range_right_port_name[-1])
                 else:
+
                     a_port_first = int(range_left_port_name[0])
                     a_port_last = int(range_right_port_name[0])
                 a_port_num = a_port_last - a_port_first + 1
@@ -69,8 +71,8 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     z_device_num_list = [str(i) for i in list(range(z_device_first, z_device_last + 1))]
                     if device_name_num % 2 == 0:
                         if '管理' in device_name:
-                            z_port_first = '3#管理口'
-                            z_port_last = '4#管理口'
+                            z_port_first = '2#管理口'
+                            z_port_last = '1#管理口'
                         elif 'IPMI' in device_name:
                             z_port_first = 'IPMI口'
                             z_port_last = 'IPMI口'
@@ -125,7 +127,6 @@ def change_device_data(device_name: str, device_data: list) -> list:
 
                 else:                                                #前面是两个，后面是一个的情况
                     for index, num in enumerate(range(a_port_first, a_port_last + 1)):
-
                         data.append({"a_device": device_name,
                                      "a_port":'/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                      "z_device": z_device_list[-1],
@@ -135,21 +136,28 @@ def change_device_data(device_name: str, device_data: list) -> list:
                 if "&" in z_device: #{'a_device': 'POD1-业务核心交换机-锐捷N18010-1', 'a_port': '', 'z_device': '网络设备管理接入交换机-华为S5335-5&6'}
                     z_device_split_list = z_device.split('&')
                     z_device_split_first = z_device_split_list[0]
-                    z_device_prefix = '-'.join(z_device_split_first.split('-')[:-1])
-                    port_info = copy.deepcopy(port_info)
-                    port_info['cabinet_num'] = cabinet_num
-                    port_info['z_device'] = z_device_split_first
-
-                    data.append(port_info)
-                    port_info = copy.deepcopy(port_info)
-                    port_info['z_device'] = z_device_prefix + '-' + z_device_split_list[-1]
-                    data.append(port_info)
-                else:
-
                     if len(a_port) == 0 and '网络设备管理接入交换机' in port_info['z_device']:
                         port_info['a_port'] = '管理口'
-                    data.append(port_info)
+                    # z_device_prefix = '-'.join(z_device_split_first.split('-'))
+                    z_device_prefix = z_device_split_first
+                    port_info = copy.deepcopy(port_info)
 
+                    port_info['cabinet_num'] = cabinet_num
+                    port_info['z_device'] = z_device_split_first
+                    data.append(port_info)
+                    port_info_copy = copy.deepcopy(port_info)
+                    port_info_copy['z_device'] = z_device_prefix[:-1] + z_device_split_list[-1]
+
+                    data.append(port_info_copy)
+
+                else:
+                    if len(a_port) == 0 and '网络设备管理接入交换机' in port_info['z_device']:
+                        port_info['a_port'] = '管理口'
+
+
+                        data.append(port_info)
+                    else:
+                        data.append(port_info)
     return data
 
 
