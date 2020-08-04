@@ -171,7 +171,6 @@ async def main():
 
 
         #
-        #
         for device_name_prefix, device_num_dict_list in device_name_dict.items():
             for device_num in device_num_dict_list:
                 if '九期管理DMZ接入交换机' in device_name_prefix or '管理域 IPMI接入交换机' in device_name_prefix or '九期' in device_name_prefix:
@@ -209,6 +208,8 @@ if __name__ == '__main__':
 
     Devices.__table__.drop(engine)
     Devices.__table__.create(engine)
+    # db_session.query(Devices).update({'is_use': 0})
+    # db_session.commit()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
     # a = 0

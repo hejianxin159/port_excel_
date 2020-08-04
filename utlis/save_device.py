@@ -4,11 +4,12 @@
 
 # from utlis.ExcelResolver import ExcelResolver
 from .ExcelResolver import ExcelResolver
+from models import db_session, Devices
 import copy
 import re
 
 
-
+z_device_port_dict = {}
 
 def change_device_data(device_name: str, device_data: list) -> list:
     data = []
@@ -69,6 +70,13 @@ def change_device_data(device_name: str, device_data: list) -> list:
                     z_device_last = int(z_device_list[1])
                     z_device_port_num = z_device_last - z_device_first + 1
                     z_device_num_list = [str(i) for i in list(range(z_device_first, z_device_last + 1))]
+                    #
+                    # is_exist_z_port = z_device_port_dict.get(z_device_list[0])
+                    # if is_exist_z_port:
+                    #     if is_exist_z_port == '1#业务口'
+                    #
+
+
                     if device_name_num % 2 == 0:
                         if '管理' in device_name:
                             z_port_first = '2#管理口'
@@ -89,6 +97,38 @@ def change_device_data(device_name: str, device_data: list) -> list:
                         else:
                             z_port_first = '1#业务口'
                             z_port_last = '2#业务口'
+                    # z_port_first = ''
+                    # z_port_last = ''
+                    #
+                    # if '管理' in device_name:
+                    #     port_first = db_session.query(Devices.z_port).filter_by(z_device = z_device_list[0]).first()
+                    #     if port_first:
+                    #         if port_first[0] == '1#管理口':
+                    #             z_port_first = '3#管理口'
+                    #             z_port_last = '4#管理口'
+                    #         else:
+                    #             z_port_first = '1#管理口'
+                    #             z_port_last = '2#管理口'
+                    #     else:
+                    #         z_port_first = '1#管理口'
+                    #         z_port_last = '2#管理口'
+                    # elif 'IPMI' in device_name:
+                    #     z_port_first = 'IPMI口'
+                    #     z_port_last = 'IPMI口'
+                    # else:
+                    #     port_first = db_session.query(Devices.z_port).filter_by(z_device=z_device_list[0]).first()
+                    #     if z_device_list[0] == 'P10F2-POD3-ST-osd-S3-NF5466M5-224':
+                    #         print(port_first)
+                    #     if port_first:
+                    #         if port_first[0] == '1#业务口':
+                    #             z_port_first = '2#业务口'
+                    #             z_port_last = '4#业务口'
+                    #         else:
+                    #             z_port_first = '1#业务口'
+                    #             z_port_last = '3#业务口'
+                    #     else:
+                    #         z_port_first = '1#业务口'
+                    #         z_port_last = '3#业务口'
 
                     if z_device_port_num * 2 == a_port_num:         #前面是后面2倍的情况
                         z_device_num_list = [i for i in z_device_num_list for j in range(2)]
@@ -117,7 +157,18 @@ def change_device_data(device_name: str, device_data: list) -> list:
                                          })
 
                     else:                                           #前面和后面相等的情况
+                        if device_name_num % 2 == 0:
+                            if 'POD' in device_name and '业务' in device_name:
+                                z_port_first = '3#业务口'
+                            elif 'POD' in device_name and '存储' in device_name:
+                                z_port_first = '4#业务口'
+                        else:
+                            if 'POD' in device_name and '业务' in device_name:
+                                z_port_first = '1#业务口'
+                            elif 'POD' in device_name and '存储' in device_name:
+                                z_port_first = '2#业务口'
                         for index, num in enumerate(range(a_port_first, a_port_last + 1)):
+
                             data.append({"a_device": device_name,
                                          "a_port": '/'.join(range_left_port_name[:-1]) + '/' + str(num) if len(range_left_port_name) > 1 and len(range_right_port_name) > 1 else str(num) ,
                                          "z_device": '-'.join(z_device_name_prefix) + '-' + z_device_num_list[index],
@@ -205,9 +256,6 @@ def save_device(file_path_list: list) -> list:
                     device_info.append(data_info)
             if len(device_info) != 0:
                 message.append({excel_name: change_device_data(device_name, device_info)})
-    # for i in message:
-    #     print(i)
-
 
 
     return message
