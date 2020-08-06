@@ -64,7 +64,7 @@ class ExcelResolver:
         return len(self.workbook.sheets())
 
 
-    # def get_sheet_name(self, index):
-    #     if not getattr(self, 'inputFile', None) or not getattr(self, 'workbook', None):
-    #         raise AttributeError('not find excel')
-    #     return self.workbook.sheets()[index]
+    def get_sheet_name(self, index):
+        if not getattr(self, 'inputFile', None) or not getattr(self, 'workbook', None):
+            raise AttributeError('not find excel')
+        return self.workbook.sheets()[index].__dict__['name']

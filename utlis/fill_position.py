@@ -65,32 +65,39 @@ class FullPosition():
             workbook = xlwt.Workbook(encoding='utf-8')
 
             #获取sheet名称
-            sheet_name = ''
+            # sheet_name = ''
             for sheet_index in range(excel_parser.get_sheet_num()):
                 #通过sheet下标获取sheet
                 excel_parser.getWorkSheet(sheet_index)
                 sheet_info_list = excel_parser.convert_excel_data_to_dict(1, device_dict)
+                sheet_name = excel_parser.get_sheet_name(sheet_index)
+                self.worksheet = workbook.add_sheet(sheet_name)
 
                 for data in sheet_info_list:
-                    if not sheet_name:
-                        sheet_name = data['A_device']
-                        self.worksheet = workbook.add_sheet(sheet_name)
+                    # if not sheet_name:
+                    #     sheet_name = data['A_device']
+                    #     print(sheet_name)
                     a_position = self.position_dict.get(data['A_device'].strip())
-                    z_position = self.position_dict.get(data['Z_device'].strip())
                     if a_position:
                         data['A_device'] = a_position['en_name']
                         data['A_home'] = a_position['room']
                         data['A_cabinet'] = a_position['cabinet']
                         data['A_u_position'] = a_position['u']
-                    if z_position and len(data['Z_home']) == 0 and len(data['Z_cabinet']) == 0:
-                        data['Z_device'] = z_position.get('en_name') if z_position.get('en_name') else data['Z_device']
-                        data['Z_home'] = z_position['room']
-                        data['Z_cabinet'] = z_position['cabinet']
-                        data['Z_u_position'] = z_position['u']
-                    #
+                    if len(data["Z_device"]) > 0:
+                        z_position = self.position_dict.get(data['Z_device'].strip())
+                        # print(data["Z_device"].strip())
+                        # print(self.position_dict.get('九期POD1业务核心交换机1'))
+
+                        if z_position and len(data['Z_cabinet']) == 0:
+                            data['Z_device'] = z_position.get('en_name') if z_position.get('en_name') else data['Z_device']
+                            data['Z_home'] = z_position['room']
+                            data['Z_cabinet'] = z_position['cabinet']
+                            data['Z_u_position'] = z_position['u']
+
+                #
                     
                 self.update_file(sheet_info_list)
-                sheet_name = ''
+                # sheet_name = ''
             workbook.save('../file/' + excel_name + 'bak' + '.xlsx')
 
     def update_file(self, sheet_data: list) -> None:
@@ -133,14 +140,14 @@ class FullPosition():
 if __name__ == '__main__':
 
     data = read_position('../zhenzhou/device_position_s.xlsx')
-
+    # for i in data:
+    #     print(i)
     data = {i['cn_name']: i for i in data}
-
+    # print(data)
     full = FullPosition(data)
     full.full_position(['../PODbakreport.xlsx'])
     # full_position(['../POD1report.xlsx'], data)
     # print(data)
     # print(len(data))
-
 
 
